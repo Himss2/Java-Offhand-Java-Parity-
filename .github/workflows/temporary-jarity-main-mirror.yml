@@ -1,0 +1,38 @@
+name: Temporary Jarity Main Mirror
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror-main:
+    if: github.repository == 'Himss2/Java-Offhand-Java-Parity-'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout destination
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror only source main
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE_URL="https://github.com/nexcaise/Jarity.git"
+
+          git remote remove source 2>/dev/null || true
+          git remote add source "$SOURCE_URL"
+
+          # Fetch only source main; no tags and no other source branches.
+          git fetch --no-tags source +refs/heads/main:refs/remotes/source/main
+
+          SOURCE_SHA="$(git rev-parse refs/remotes/source/main)"
+          echo "Mirroring source main at $SOURCE_SHA"
+
+          git checkout -B main "$SOURCE_SHA"
+          git push --force origin refs/heads/main:refs/heads/main
