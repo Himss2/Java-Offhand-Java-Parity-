@@ -1,0 +1,36 @@
+name: Temporary Main Mirror
+
+on:
+  push:
+    paths:
+      - ".github/workflows/temporary-main-mirror.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout destination
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch exact source main and replace destination main
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_URL="https://github.com/nexcaise/Nyoba-Doanm.git"
+          SOURCE_SHA="9651b4698d447e55dacb50e5a1436eb5fcb66bc4"
+
+          git remote add source "$SOURCE_URL"
+          git fetch --no-tags source main
+
+          if ! git cat-file -e "$SOURCE_SHA^{commit}"; then
+            echo "Expected source commit $SOURCE_SHA was not fetched" >&2
+            exit 1
+          fi
+
+          git checkout -B main "$SOURCE_SHA"
+          git push --force origin main
