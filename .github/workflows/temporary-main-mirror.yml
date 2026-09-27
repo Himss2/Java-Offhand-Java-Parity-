@@ -18,20 +18,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch exact source main and replace destination main
+      - name: Find source and replace destination main
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE_URL="https://github.com/nexcaise/Nyoba-Doanm.git"
           SOURCE_SHA="9651b4698d447e55dacb50e5a1436eb5fcb66bc4"
+          CANDIDATES=(
+            "https://github.com/nexcaise/Nyoba-Doanm.git"
+            "https://github.com/nexcaise/Java-Parity-Included-Offhand.git"
+            "https://github.com/nexcaise/Offhand-Mod.git"
+            "https://github.com/Himss2/Nyoba-Doanm.git"
+            "https://github.com/Himss2/Offhand-Mod.git"
+          )
 
-          git remote add source "$SOURCE_URL"
-          git fetch --no-tags source main
+          for SOURCE_URL in "${CANDIDATES[@]}"; do
+            echo "Trying $SOURCE_URL"
+            git remote remove source 2>/dev/null || true
+            git remote add source "$SOURCE_URL"
+            if git fetch --no-tags source main; then
+              if git cat-file -e "$SOURCE_SHA^{commit}" 2>/dev/null; then
+                echo "Found expected source commit at $SOURCE_URL"
+                git checkout -B main "$SOURCE_SHA"
+                git push --force origin main
+                exit 0
+              fi
+            fi
+          done
 
-          if ! git cat-file -e "$SOURCE_SHA^{commit}"; then
-            echo "Expected source commit $SOURCE_SHA was not fetched" >&2
-            exit 1
-          fi
-
-          git checkout -B main "$SOURCE_SHA"
-          git push --force origin main
+          echo "No accessible candidate contained expected source commit $SOURCE_SHA" >&2
+          exit 1
