@@ -1,15 +1,16 @@
 name: Temporary Main Mirror
 
 on:
-  push:
-    paths:
-      - ".github/workflows/temporary-main-mirror.yml"
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   mirror:
+    if: github.repository == 'Himss2/Java-Offhand-Java-Parity-'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout destination
